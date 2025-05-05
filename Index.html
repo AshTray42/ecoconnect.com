@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoTime - Bottle Redemption</title>
+    <link rel="stylesheet" href="styles/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Status Indicator -->
+        <div class="status-bar">
+            <div id="connection-status" class="status-offline">Offline</div>
+        </div>
+        
+        <!-- Scanner View -->
+        <div id="scanner-view" class="view active">
+            <h1>EcoTime</h1>
+            <p class="subtitle">Insert bottles to earn internet time</p>
+            
+            <div class="scan-section">
+                <div id="qr-reader"></div>
+                <p class="scan-instruction">Scan the QR code on the device</p>
+            </div>
+            
+            <div class="device-info hidden" id="device-info">
+                <h3>Device Connected</h3>
+                <p id="device-id">ID: Loading...</p>
+            </div>
+        </div>
+        
+        <!-- Bottle Counter View -->
+        <div id="counter-view" class="view">
+            <h2>Bottle Counter</h2>
+            
+            <div class="bottle-animation" id="bottle-animation">
+                <div class="bottle" id="bottle-icon">🥤</div>
+            </div>
+            
+            <div class="counter-display">
+                <div class="counter">
+                    <span id="bottle-count">0</span>
+                    <span class="counter-label">bottles</span>
+                </div>
+                <div class="counter">
+                    <span id="time-earned">0</span>
+                    <span class="counter-label">minutes</span>
+                </div>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+                <span class="progress-text" id="progress-text">0/10 bottles</span>
+            </div>
+            
+            <button id="finish-btn" class="btn-primary" disabled>Start Internet Access</button>
+            <button id="cancel-btn" class="btn-secondary">Cancel</button>
+        </div>
+        
+        <!-- Timer View -->
+        <div id="timer-view" class="view">
+            <h2>Internet Access Active</h2>
+            
+            <div class="timer-display" id="timer-display">50:00</div>
+            
+            <div class="internet-status">
+                <div class="status-indicator" id="internet-indicator"></div>
+                <span id="internet-status-text">Connected</span>
+            </div>
+            
+            <button id="disconnect-btn" class="btn-primary">Disconnect</button>
+            
+            <div class="bottle-history">
+                <h3>Bottle History</h3>
+                <ul id="bottle-history-list"></ul>
+            </div>
+        </div>
+        
+        <!-- Error View -->
+        <div id="error-view" class="view">
+            <div class="error-icon">⚠️</div>
+            <h2 id="error-title">Connection Error</h2>
+            <p id="error-message">Unable to connect to the device.</p>
+            <button id="retry-btn" class="btn-primary">Try Again</button>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.1/qr-scanner.min.js"></script>
+    <script src="scripts/timer.js"></script>
+    <script src="scripts/device-connection.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>

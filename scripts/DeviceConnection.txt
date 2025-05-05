@@ -1,0 +1,117 @@
+class DeviceConnection {
+    constructor() {
+        this.socket = null;
+        this.deviceId = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.reconnectDelay = 3000; // 3 seconds
+    }
+
+    connect(deviceId) {
+        return new Promise((resolve, reject) => {
+            // Update UI to connecting state
+            this.updateConnectionStatus('connecting');
+            
+            // In a real implementation, this would connect to your NodeMCU/nanocontroller
+            // For simulation, we'll use a timeout
+            console.log(`Connecting to device: ${deviceId}`);
+            
+            // Simulate connection delay
+            setTimeout(() => {
+                // 90% chance of successful connection for demo purposes
+                if (Math.random() > 0.1) {
+                    this.deviceId = deviceId;
+                    this.socket = {
+                        // Mock WebSocket methods
+                        send: (data) => console.log('Sending to device:', data),
+                        close: () => {
+                            console.log('Connection closed');
+                            this.socket = null;
+                            this.updateConnectionStatus('offline');
+                        }
+                    };
+                    
+                    // Set up mock event listeners
+                    this.setupMockListeners();
+                    
+                    this.updateConnectionStatus('online');
+                    this.reconnectAttempts = 0;
+                    resolve();
+                } else {
+                    this.handleConnectionError('Failed to connect to device', reject);
+                }
+            }, 1500);
+        });
+    }
+
+    setupMockListeners() {
+        // Simulate bottle insertion events from the device
+        setInterval(() => {
+            if (this.socket) {
+                // Random bottle insertion (for demo)
+                if (Math.random() > 0.7) {
+                    const event = {
+                        type: 'bottle_inserted',
+                        timestamp: new Date().toISOString()
+                    };
+                    this.handleDeviceMessage(event);
+                }
+            }
+        }, 4000);
+    }
+
+    handleDeviceMessage(event) {
+        if (event.type === 'bottle_inserted') {
+            // Trigger bottle added event
+            const bottleEvent = new CustomEvent('bottleAdded', {
+                detail: {
+                    timestamp: new Date(event.timestamp)
+                }
+            });
+            document.dispatchEvent(bottleEvent);
+        }
+    }
+
+    handleConnectionError(error, reject) {
+        console.error('Connection error:', error);
+        this.reconnectAttempts++;
+        
+        if (this.reconnectAttempts <= this.maxReconnectAttempts) {
+            console.log(`Reconnecting attempt ${this.reconnectAttempts}...`);
+            setTimeout(() => this.connect(this.deviceId)
+                .then(resolve)
+                .catch(reject), this.reconnectDelay);
+        } else {
+            this.updateConnectionStatus('offline');
+            if (reject) reject(error);
+        }
+    }
+
+    disconnect() {
+        if (this.socket) {
+            // In a real implementation, close the WebSocket
+            this.socket.close();
+            this.socket = null;
+        }
+        this.updateConnectionStatus('offline');
+    }
+
+    updateConnectionStatus(status) {
+        const statusElement = document.getElementById('connection-status');
+        if (!statusElement) return;
+        
+        statusElement.className = `status-${status}`;
+        statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        
+        if (status === 'connecting') {
+            statusElement.classList.add('connecting');
+        } else {
+            statusElement.classList.remove('connecting');
+        }
+    }
+}
+
+// Initialize device connection when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.deviceConnection = new DeviceConnection();
+});

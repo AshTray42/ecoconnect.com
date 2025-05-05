@@ -1,0 +1,198 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // DOM Elements
+    const views = {
+        scanner: document.getElementById('scanner-view'),
+        counter: document.getElementById('counter-view'),
+        timer: document.getElementById('timer-view'),
+        error: document.getElementById('error-view')
+    };
+    
+    const bottleCountElement = document.getElementById('bottle-count');
+    const timeEarnedElement = document.getElementById('time-earned');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const bottleAnimation = document.getElementById('bottle-animation');
+    const bottleIcon = document.getElementById('bottle-icon');
+    const bottleHistoryList = document.getElementById('bottle-history-list');
+    
+    const finishButton = document.getElementById('finish-btn');
+    const cancelButton = document.getElementById('cancel-btn');
+    const disconnectButton = document.getElementById('disconnect-btn');
+    const retryButton = document.getElementById('retry-btn');
+    
+    // State
+    let bottleCount = 0;
+    let timeEarned = 0;
+    const maxBottles = 10;
+    const minutesPerBottle = 5;
+    const internetTimer = new InternetTimer();
+    let bottleHistory = [];
+    
+    // Initialize QR Scanner
+    let qrScanner = null;
+    function initializeScanner() {
+        if (qrScanner) qrScanner.stop();
+        
+        const qrReader = document.getElementById('qr-reader');
+        qrScanner = new QrScanner(
+            qrReader,
+            result => handleQRScan(result),
+            {
+                highlightScanRegion: true,
+                highlightCodeOutline: true,
+                maxScansPerSecond: 5
+            }
+        );
+        qrScanner.start();
+    }
+    
+    // Handle QR Scan Result
+    function handleQRScan(result) {
+        console.log('QR Code scanned:', result);
+        
+        // Validate the QR code content (in a real app, this would check a device ID format)
+        if (!result || result.trim() === '') {
+            showError('Invalid QR Code', 'Please scan a valid device QR code.');
+            return;
+        }
+        
+        // Show connecting state
+        document.getElementById('device-id').textContent = `ID: ${result}`;
+        document.getElementById('device-info').classList.remove('hidden');
+        
+        // Connect to the device
+        deviceConnection.connect(result)
+            .then(() => {
+                // Successfully connected - show counter view
+                switchView('counter');
+                
+                // Listen for bottle events from the device
+                document.addEventListener('bottleAdded', handleBottleAdded);
+            })
+            .catch(error => {
+                showError('Connection Failed', error.message || 'Could not connect to the device.');
+            });
+    }
+    
+    // Handle Bottle Insertion
+    function handleBottleAdded(event) {
+        if (bottleCount >= maxBottles) return;
+        
+        bottleCount++;
+        timeEarned = bottleCount * minutesPerBottle;
+        
+        // Update UI
+        updateBottleCounter();
+        
+        // Animate bottle addition
+        bottleIcon.classList.add('added');
+        setTimeout(() => bottleIcon.classList.remove('added'), 500);
+        
+        // Add to history
+        const historyItem = {
+            timestamp: event.detail.timestamp || new Date(),
+            bottleNumber: bottleCount
+        };
+        bottleHistory.unshift(historyItem);
+        updateBottleHistory();
+    }
+    
+    // Update Bottle Counter UI
+    function updateBottleCounter() {
+        bottleCountElement.textContent = bottleCount;
+        timeEarnedElement.textContent = timeEarned;
+        
+        // Update progress bar
+        const progressPercent = (bottleCount / maxBottles) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+        progressText.textContent = `${bottleCount}/${maxBottles} bottles`;
+        
+        // Enable/disable finish button
+        finishButton.disabled = bottleCount === 0;
+    }
+    
+    // Update Bottle History UI
+    function updateBottleHistory() {
+        bottleHistoryList.innerHTML = '';
+        
+        bottleHistory.forEach(item => {
+            const li = document.createElement('li');
+            const timeString = item.timestamp.toLocaleTimeString();
+            li.innerHTML = `
+                <span>Bottle #${item.bottleNumber}</span>
+                <span>${timeString}</span>
+            `;
+            bottleHistoryList.appendChild(li);
+        });
+    }
+    
+    // Switch Between Views
+    function switchView(viewName) {
+        // Hide all views
+        Object.values(views).forEach(view => {
+            view.classList.remove('active');
+        });
+        
+        // Show selected view
+        if (views[viewName]) {
+            views[viewName].classList.add('active');
+        }
+    }
+    
+    // Show Error View
+    function showError(title, message) {
+        document.getElementById('error-title').textContent = title;
+        document.getElementById('error-message').textContent = message;
+        switchView('error');
+    }
+    
+    // Event Listeners
+    finishButton.addEventListener('click', () => {
+        // Start internet access timer
+        switchView('timer');
+        internetTimer.start(timeEarned, 
+            time => document.getElementById('timer-display').textContent = time,
+            () => {
+                // Timer completed
+                switchView('scanner');
+                resetSystem();
+            }
+        );
+    });
+    
+    cancelButton.addEventListener('click', () => {
+        // Return to scanner view
+        deviceConnection.disconnect();
+        switchView('scanner');
+        resetSystem();
+        initializeScanner();
+    });
+    
+    disconnectButton.addEventListener('click', () => {
+        // Stop timer and return to scanner
+        internetTimer.stop();
+        switchView('scanner');
+        resetSystem();
+        initializeScanner();
+    });
+    
+    retryButton.addEventListener('click', () => {
+        // Retry connection
+        switchView('scanner');
+        initializeScanner();
+    });
+    
+    // Reset System State
+    function resetSystem() {
+        bottleCount = 0;
+        timeEarned = 0;
+        bottleHistory = [];
+        updateBottleCounter();
+        updateBottleHistory();
+        document.removeEventListener('bottleAdded', handleBottleAdded);
+    }
+    
+    // Initialize the app
+    initializeScanner();
+    switchView('scanner');
+});

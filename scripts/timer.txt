@@ -1,0 +1,76 @@
+class InternetTimer {
+    constructor() {
+        this.timer = null;
+        this.remainingSeconds = 0;
+        this.totalSeconds = 0;
+        this.isActive = false;
+        this.updateInterval = null;
+    }
+
+    start(minutes, onUpdate, onComplete) {
+        if (this.isActive) return;
+        
+        this.totalSeconds = minutes * 60;
+        this.remainingSeconds = this.totalSeconds;
+        this.isActive = true;
+        
+        // Start the countdown
+        this.updateInterval = setInterval(() => {
+            this.remainingSeconds--;
+            
+            if (this.remainingSeconds <= 0) {
+                this.stop();
+                this.remainingSeconds = 0;
+                if (onComplete) onComplete();
+            }
+            
+            if (onUpdate) onUpdate(this.getFormattedTime());
+        }, 1000);
+        
+        // Initial update
+        if (onUpdate) onUpdate(this.getFormattedTime());
+        
+        // Enable internet access (simulated)
+        this.enableInternetAccess(true);
+    }
+
+    stop() {
+        if (!this.isActive) return;
+        
+        clearInterval(this.updateInterval);
+        this.isActive = false;
+        
+        // Disable internet access (simulated)
+        this.enableInternetAccess(false);
+    }
+
+    addMinutes(minutes) {
+        const additionalSeconds = minutes * 60;
+        this.totalSeconds += additionalSeconds;
+        this.remainingSeconds += additionalSeconds;
+    }
+
+    getFormattedTime() {
+        const minutes = Math.floor(this.remainingSeconds / 60);
+        const seconds = this.remainingSeconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    enableInternetAccess(enable) {
+        // In a real implementation, this would control actual internet access
+        console.log(`Internet access ${enable ? 'ENABLED' : 'DISABLED'}`);
+        
+        const indicator = document.getElementById('internet-indicator');
+        const statusText = document.getElementById('internet-status-text');
+        
+        if (indicator && statusText) {
+            if (enable) {
+                indicator.style.backgroundColor = 'var(--online-color)';
+                statusText.textContent = 'Connected';
+            } else {
+                indicator.style.backgroundColor = 'var(--offline-color)';
+                statusText.textContent = 'Disconnected';
+            }
+        }
+    }
+}
